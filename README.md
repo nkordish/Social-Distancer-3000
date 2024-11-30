@@ -18,8 +18,5 @@ DFPlayer inform can be found
  labeled "mp3" that contains the sound files you intend to use. 
  Label the sound files as follows: "0001", "0002", "0003", etc. 
 
- The project is purely for entertainment and is not intended to cause harm. The code is nearly complete;
- I’ve successfully integrated functionality for both the DFPlayer Mini and the HCSR04 sensors. 
- However, I’m working on refining it to prevent audio overlap when an object remains in the sensor's
- range for an extended period. Suggestions for improving this functionality are highly appreciated. 
+ The project is purely for entertainment and is not intended to cause harm. 
   Have fun!
