@@ -1,4 +1,3 @@
-
 /***************************************************
 
 "  The Social Distancer 3000"
@@ -20,19 +19,16 @@ DFPlayer inform can be found
  labeled "mp3" that contains the sound files you intend to use. 
  Label the sound files as follows: "0001", "0002", "0003", etc. 
 
- The project is purely for entertainment and is not intended to cause harm. The code is nearly complete;
- I’ve successfully integrated functionality for both the DFPlayer Mini and the HCSR04 sensors. 
- However, I’m working on refining it to prevent audio overlap when an object remains in the sensor's
- range for an extended period. Suggestions for improving this functionality are highly appreciated. 
-  Have fun!
+ The project is purely for entertainment and is not intended to cause harm.  
+ Have fun!
 
 
  ****************************************************/
-
-#include "Arduino.h"
+ 
+ #include "Arduino.h"
 #include "DFRobotDFPlayerMini.h"
 
-#if (defined(ARDUINO_AVR_UNO) || defined(ESP8266))   // Using a soft serial port
+#if (defined(ARDUINO_AVR_UNO) || defined(ESP8266))
 #include <SoftwareSerial.h>
 SoftwareSerial softSerial(/*rx =*/10, /*tx =*/11); // RX and TX connections
 #define FPSerial softSerial
@@ -40,11 +36,9 @@ SoftwareSerial softSerial(/*rx =*/10, /*tx =*/11); // RX and TX connections
 #define FPSerial Serial1
 #endif
 
-
 DFRobotDFPlayerMini myDFPlayer;
-void printDetail(uint8_t type, int value);  // DFPlayer mini functionality - pulled from DF Robot site
+void printDetail(uint8_t type, int value);
 
-//globals for SR04 - pulled from SR04 example sketch and modified to fit multiple sensors running at same time
 #include "SR04.h"
 #define TRIG_PIN 2
 #define ECHO_PIN 3
@@ -54,19 +48,14 @@ void printDetail(uint8_t type, int value);  // DFPlayer mini functionality - pul
 #define ECHO_PIN3 7
 #define TRIG_PIN4 8
 #define ECHO_PIN4 9
-SR04 front = SR04(ECHO_PIN,TRIG_PIN);  // front sensor
-SR04 back = SR04(ECHO_PIN2, TRIG_PIN2);  // back sensor
-SR04 left = SR04(ECHO_PIN3, TRIG_PIN3);  // left sensor
-SR04 right = SR04(ECHO_PIN4, TRIG_PIN4);  // right sensor
-long a; // front distance
-long b; // back distance
-long c; // left distance
-long d; // right distance
-//end globals for SR04
+SR04 front = SR04(ECHO_PIN, TRIG_PIN);
+SR04 back = SR04(ECHO_PIN2, TRIG_PIN2);
+SR04 left = SR04(ECHO_PIN3, TRIG_PIN3);
+SR04 right = SR04(ECHO_PIN4, TRIG_PIN4);
+long a, b, c, d; // Sensor distances
+bool isPlaying = false; // Tracks if a sound is playing
 
-
-
-void setup() // set up functions for DFPlayer Mini with error code
+void setup()
 {
 #if (defined ESP32)
   FPSerial.begin(9600, SERIAL_8N1, /*rx =*/D3, /*tx =*/D2);
@@ -76,99 +65,68 @@ void setup() // set up functions for DFPlayer Mini with error code
 
   Serial.begin(115200);
 
-  Serial.println();
-  Serial.println(F("DFRobot DFPlayer Mini Demo"));
-  Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
-
-  if (!myDFPlayer.begin(FPSerial, /*isACK = */true, /*doReset = */true)) {  //Use serial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
-    while(true){
-      delay(0); // Code to compatible with ESP8266 watch dog.
+  Serial.println(F("Initializing DFPlayer..."));
+  if (!myDFPlayer.begin(FPSerial, true, true)) {
+    Serial.println(F("Unable to initialize DFPlayer."));
+    while (true) {
+      delay(0);
     }
   }
   Serial.println(F("DFPlayer Mini online."));
-
-  myDFPlayer.volume(30);  //Set volume value. From 0 to 30
-  
+  myDFPlayer.volume(30); // Set volume level (0-30)
 }
 
 void loop()
 {
   static unsigned long timer = millis();
 
-  if (millis() - timer > 3500) {   
-  a=front.Distance(); 
-  b=back.Distance();
-  c=left.Distance();
-  d=right.Distance();
-   
-   Serial.println("Distance front: ");
-   Serial.print(a);
- Serial.print(" cm, Distance back: ");
-  Serial.print(b);
-  Serial.print(" cm, Distance left: ");
-  Serial.print(c);
-  Serial.print(" cm, Distance right: ");
-  Serial.println(d);
-   delay(500);
+  if (millis() - timer > 3500) {
+    a = front.Distance();
+    b = back.Distance();
+    c = left.Distance();
+    d = right.Distance();
+
+    Serial.print("Distances: Front=");
+    Serial.print(a);
+    Serial.print(" cm, Back=");
+    Serial.print(b);
+    Serial.print(" cm, Left=");
+    Serial.print(c);
+    Serial.print(" cm, Right=");
+    Serial.println(d);
 
     timer = millis();
-    if (a<= 40) {
 
-myDFPlayer.next();  //Play next mp3
+    if (!isPlaying) { // Check if sound is already playing
+      if (a <= 40) {
+        myDFPlayer.next();
+        isPlaying = true;
+      } else if (b <= 40) {
+        myDFPlayer.next();
+        isPlaying = true;
+      } else if (c <= 40) {
+        myDFPlayer.next();
+        isPlaying = true;
+      } else if (d <= 40) {
+        myDFPlayer.next();
+        isPlaying = true;
+      }
     }
-timer = millis();
-    if (b<= 40) {
-
-myDFPlayer.next();  //Play next mp3
-    }
-    timer = millis();
-    if (c<= 40) {
-
-myDFPlayer.next();  //Play next mp3
-    }
-timer = millis();
-    if (d<= 40) {
-
-myDFPlayer.next();  //Play next mp3
-    }
-
   }
 
   if (myDFPlayer.available()) {
-    printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
+    printDetail(myDFPlayer.readType(), myDFPlayer.read());
   }
 }
 
-void printDetail(uint8_t type, int value){ // additional error codes
+void printDetail(uint8_t type, int value)
+{
   switch (type) {
-    case TimeOut:
-      Serial.println(F("Time Out!"));
-      break;
-    case WrongStack:
-      Serial.println(F("Stack Wrong!"));
-      break;
-    case DFPlayerCardInserted:
-      Serial.println(F("Card Inserted!"));
-      break;
-    case DFPlayerCardRemoved:
-      Serial.println(F("Card Removed!"));
-      break;
-    case DFPlayerCardOnline:
-      Serial.println(F("Card Online!"));
-      break;
-    case DFPlayerUSBInserted:
-      Serial.println("USB Inserted!");
-      break;
-    case DFPlayerUSBRemoved:
-      Serial.println("USB Removed!");
-      break;
     case DFPlayerPlayFinished:
       Serial.print(F("Number:"));
       Serial.print(value);
       Serial.println(F(" Play Finished!"));
+      isPlaying = false; // Reset when playback finishes
       break;
     case DFPlayerError:
       Serial.print(F("DFPlayerError:"));
@@ -201,5 +159,4 @@ void printDetail(uint8_t type, int value){ // additional error codes
     default:
       break;
   }
-
 }
